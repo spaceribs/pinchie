@@ -1,0 +1,8 @@
+{
+  "name": "pinchie",
+  "version": "0.0.0",
+  "dependencies": {
+    "matter-js": "~0.8.0-alpha",
+    "paper": "~0.9.18"
+  }
+}
