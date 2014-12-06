@@ -60,9 +60,9 @@
 
         // default scene function name
         _sceneName = 'mixed';
-
+        
         // get the scene function name from hash
-        if (window.location.hash.length !== 0)
+        if (window.location.hash.length !== 0) 
             _sceneName = window.location.hash.replace('#', '').replace('-inspect', '');
 
         // set up a scene with bodies

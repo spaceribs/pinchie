@@ -84,7 +84,9 @@ window.renderpaper = {};
         render.skinLayer.strokeColor = "#FFF";
         render.skinLayer.strokeWidth = 5;
 
-        render.handLayer = paper.project.importJSON(hand);
+
+        render.handLayer = new paper.Group();
+        render.handLayer.importJSON(hand);
         render.handLayer.children["Finger"].pivot = new paper.Point(195, 526);
         render.handLayer.children["Thumb"].pivot = new paper.Point(275, 530);
         render.handLayer.children["Arm"].pivot = new paper.Point(280, 510);
@@ -130,9 +132,9 @@ window.renderpaper = {};
     RenderPinchie.world = function(engine) {
         //console.log(Composite.get(engine.world, 100, "composite"));
         _renderSkin(engine);
-        _renderPuss(engine);
         _renderBoils(engine);
         _renderFingers(engine);
+        _renderPuss(engine);
         paper.view.update();
     };
 
@@ -163,33 +165,6 @@ window.renderpaper = {};
                 position: thumbPoint,
                 rotation: angle + (dist.x/8)
             });
-
-//            render.set({
-//                position: {
-//                    x: mouseToFinger.pointA.x,
-//                    y: mouseToFinger.pointA.y-300
-//                }
-//            });
-
-//            if (render.children["fingerhit"]) {
-//                console.log(render.children["fingerhit"]);
-//                render.children["fingerhit"].position = new paper.Point(bodies[0].position.x, bodies[0].position.y);
-//                render.children["thumbhit"].position = new paper.Point(bodies[1].position.x, bodies[1].position.y);
-//            } else {
-//                var finger = new paper.Path.Circle(bodies[0].position, bodies[0].circleRadius);
-//                finger.fillColor = '#F00';
-//                finger.name = "fingerhit";
-//                render.addChild( finger );
-//
-//                var thumb = new paper.Path.Circle(bodies[1].position, bodies[1].circleRadius);
-//                thumb.fillColor = '#F00';
-//                thumb.name = "thumbhit";
-//                render.addChild( thumb );
-//            }
-////
-//            for (var i = 2; i < bodies.length; i++) {
-//                render.children[i].position = new paper.Point(bodies[i].position.x, bodies[i].position.y);
-//            }
         }
     };
 
@@ -201,11 +176,10 @@ window.renderpaper = {};
             var bodies = Composite.allBodies(composite);
             if (render.segments.length-2 !== bodies.length) {
                 render.removeSegments(2);
-                for (var i = 0; i < bodies.length; i++) {
-                    var body = bodies[i];
+                for (var e = 0; e < bodies.length; e++) {
+                    var body = bodies[e];
 
                     var point = new paper.Point(body.position.x, body.position.y);
-                    var segment = new paper.Segment(point, new paper.Point(0, -10), new paper.Point(0, 10))
                     render.add(point);
                 }
             }
@@ -219,7 +193,7 @@ window.renderpaper = {};
 
             //skinRender.smooth();
         }
-    }
+    };
 
     var _renderBoils = function(engine) {
         var composite = Composite.get(engine.world, 101, "composite");
@@ -228,19 +202,11 @@ window.renderpaper = {};
         if (composite) {
             var bodies = Composite.allBodies(composite);
             if (bodies.length !== render.children.length) {
-
-                for (var i = 0; i < bodies.length - render.children.length; i++) {
-                    var body = bodies[render.children.length+i];
+                for (var e = 0; e < bodies.length - render.children.length; e++) {
+                    var body = bodies[render.children.length+e];
                     var center = new paper.Point(body.position.x, body.position.y);
-                    var boil = new paper.Path.Circle(center, body.circleRadius);
-                    boil.fillColor = {
-                        gradient: {
-                            stops: [[new paper.Color(1,0,0,0), 1], [new paper.Color(1,0,0,0.4), 0]],
-                            radial: true
-                        },
-                        origin: boil.bounds.topCenter,
-                        destination: boil.bounds.rightCenter
-                    };
+                    var boil = new paper.Path.Circle(center, 1);
+                    boil.fillColor = "rgba(255,0,0,0.2)";
                     render.addChild( boil );
                 }
             }
@@ -251,57 +217,61 @@ window.renderpaper = {};
                 } else {
                     render.children[i].visible = true;
                     render.children[i].position = new paper.Point(bodies[i].position.x, bodies[i].position.y);
-                    render.children[i].radius = bodies[i].circleRadius;
+                    var newRadius = bodies[i].circleRadius / render.children[i].bounds.width;
+                    if (Math.round(newRadius) !== 1) {
+                        render.children[i].scale(newRadius*2);
+                    }
                 }
             }
         }
-    }
-
+    };
 
     var _renderPuss = function(engine) {
 
-        var composite = Composite.get(engine.world, 101, "composite");
+        var composite = Composite.get(engine.world, 103, "composite");
         var render = engine.render.pussLayer;
 
         if (composite) {
             var bodies = Composite.allBodies(composite);
-            if (bodies.length !== render.children.length) {
 
-                for (var i = 0; i < bodies.length - render.children.length; i++) {
-                    var body = bodies[render.children.length+i];
+            if (bodies.length > render.children.length) {
+                for (var e = 0; e < bodies.length - render.children.length; e++) {
+                    var body = bodies[render.children.length+e];
                     var center = new paper.Point(body.position.x, body.position.y);
-                    var puss = new paper.Path.Circle(center, body.circleRadius);
+                    var puss = new paper.Path.Circle(center, body.circleRadius+1);
                     puss.fillColor = "#FFF";
                     render.addChild( puss );
                 }
             }
 
-            for (var i = 0; i < bodies.length; i++) {
+            for (var i = 0; i < render.children.length; i++) {
                 if (bodies[i].position.x > engine.render.options.width || bodies[i].position.x < 0) {
                     render.children[i].visible = false;
                 } else {
                     render.children[i].visible = true;
-                    render.children[i].position = new paper.Point(bodies[i].position.x, bodies[i].position.y);
+                    render.children[i].position = new paper.Point(bodies[i].position.x, bodies[i].position.y+5);
                     render.children[i].radius = bodies[i].circleRadius;
                 }
             }
         }
-    }
+    };
 
     /**
      * Description
      * @method _createCanvas
      * @private
-     * @param {width} width
-     * @param {height} height
-     * @return {canvas} canvas
+     * @param {int} width
+     * @param {int} height
+     * @return {HTMLElement} HTMLElement
      */
-    var _createCanvas = function(width, height) {
+    var _createCanvas = function (width, height) {
         var canvas = document.createElement('canvas');
 //        canvas.setAttribute('hidpi',"off");
         canvas.width = width;
         canvas.height = height;
-        canvas.onselectstart = function() { return false; };
+        canvas.onselectstart = function () {
+            return false;
+        };
         return canvas;
     };
 
