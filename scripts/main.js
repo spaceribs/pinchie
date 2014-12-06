@@ -1,3 +1,13 @@
+console.table({
+    "Creator": {
+        "Name": "Aaron Brewer",
+        "Email": "spaceribs@gmail.com",
+        "Website": "http://aaronbrewer.net",
+        "Reddit": "http://www.reddit.com/user/spaceribs",
+        "Github": "https://github.com/spaceribs"
+    }
+});
+
 var mainInit = function () {
 
 //-- Matter aliases
@@ -32,7 +42,7 @@ var mainInit = function () {
     var engine = Engine.create(container, {
         positionIterations: 1,
         velocityIterations: 10,
-        enableSleeping: true,
+        enableSleeping: false,
         render: {
             element: container,
             controller: RenderPinchie,
@@ -59,12 +69,18 @@ var mainInit = function () {
 
     // Skin Layer
     var skinLayer = Composites.stack(-12, screen_height - 100, parseInt(screen_width / 10.9), 1, 2.9, 2.6, function (x, y, column, row) {
-        return Bodies.rectangle(x, y, 12, 10, {density: 1000, friction: 10, isStatic: false, label: 'Skin'});
+        return Bodies.rectangle(x, y, 12, 10, {
+            density: 1000,
+            friction: 10,
+            isStatic: false,
+            label: 'Skin',
+            frictionAir: 1
+        });
     });
     skinLayer.id = 100;
     skinLayer.bodies[0].isStatic = true;
     skinLayer.bodies[skinLayer.bodies.length - 1].isStatic = true;
-    Composites.chain(skinLayer, 0.5, 0, -0.5, 0, {stiffness: 0.2, length: 2, label: 'Skin'});
+    Composites.chain(skinLayer, 0.5, 0, -0.5, 0, {stiffness: 0.1, length: 0.1, label: 'Skin'});
 
     // Puss/Boil Layer
     var pussComposite = Composite.create({
@@ -75,7 +91,6 @@ var mainInit = function () {
     var pussOptions = {
         density: 100,
         friction: 10,
-        airFriction: 1000,
         label: 'Puss'
     };
 
@@ -86,8 +101,10 @@ var mainInit = function () {
     });
 
     var particleOptions = {
-        density: 0.1,
-        friction: 0.1,
+        density: 1,
+        friction: 1,
+        timeScale: 0.5,
+        slop: 0.1,
         label: 'Particle'
     };
 
@@ -100,14 +117,16 @@ var mainInit = function () {
     var finger = Bodies.circle(screen_width / 2, screen_height / 2, 20, {
         id: 300,
         isStatic: false,
-        friction: 1,
-        density: 1000
+        friction: 100,
+        density: 1000,
+        frictionAir: 1
     });
     var thumb = Bodies.circle(screen_width / 2, screen_height / 2, 20, {
         id: 301,
         isStatic: false,
-        friction: 1,
-        density: 1000
+        friction: 100,
+        density: 1000,
+        frictionAir: 1
     });
     var fingerJoint1 = Constraint.create({
         label: "Mouse to Finger",
@@ -115,7 +134,7 @@ var mainInit = function () {
         pointA: mouseJoint,
         bodyB: finger,
         length: 70,
-        stiffness: 0.1
+        stiffness: 0.2
     });
     var fingerJoint2 = Constraint.create({
         label: "Mouse to Thumb",
@@ -123,7 +142,7 @@ var mainInit = function () {
         pointA: mouseJoint,
         bodyB: thumb,
         length: 70,
-        stiffness: 0.1
+        stiffness: 0.2
     });
     var fingerJoint3 = Constraint.create({
         label: "Finger to Thumb",
@@ -131,7 +150,7 @@ var mainInit = function () {
         bodyA: finger,
         bodyB: thumb,
         length: 140,
-        stiffness: 0.01
+        stiffness: 0.1
     });
     var fingerJoint4 = Constraint.create({
         label: "Finger to Top Left Corner",
@@ -193,7 +212,7 @@ var mainInit = function () {
 
             if (ev.pointers[0].clientX < ev.pointers[1].clientX) {
 
-                fingerJoint3.length = ev.pointers[1].clientX - ev.pointers[0].clientX;
+                fingerJoint3.length = ev.pointers[1].clientX/2 - ev.pointers[0].clientX/2;
 
                 fingerJoint1.pointA = {
                     x: ev.pointers[0].clientX,
@@ -207,7 +226,7 @@ var mainInit = function () {
 
             } else {
 
-                fingerJoint3.length = ev.pointers[0].clientX - ev.pointers[1].clientX;
+                fingerJoint3.length = ev.pointers[0].clientX/2 - ev.pointers[1].clientX/2;
 
                 fingerJoint1.pointA = {
                     x: ev.pointers[1].clientX,
@@ -259,24 +278,18 @@ var mainInit = function () {
         // Puss/Boil action
         mod++;
         if (mod % Math.floor(Math.random() * 200) == 0) {
-            if (pussComposite.bodies.length < 10) {
-                var randomRadius = 4 + (Math.random() * 2);
+            if (pussComposite.bodies.length < Math.round(screen_width/100)) {
+                var randomRadius = 10 + (Math.random() * 20);
                 var newBody = Bodies.circle((Math.random() * screen_width), screen_height - 76, randomRadius, pussOptions, 5);
                 newBody.label = 'Puss';
                 newBody.lifetime = 0;
                 Composite.addBody(pussComposite, newBody);
-            } else if (pussComposite.bodies.length > 0) {
-                var randomPuss = pussComposite.bodies[Math.floor(Math.random()*pussComposite.bodies.length)];
-                if (randomPuss.circleRadius < 20) {
-                    Body.scale(randomPuss, 1.1, 1.1);
-                    randomPuss.circleRadius *= 1.1;
-                }
             }
         }
 
         for (var e = 0; e < pussComposite.bodies.length; e++ ){
-            var puss = pussComposite.bodies[0];
-            if (puss.position.y > screen_height || puss.position.x < 0 || puss.position.x > screen_width) {
+            var puss = pussComposite.bodies[e];
+            if ( puss.position.y < 0 || puss.position.y > screen_height || puss.position.x < 0 || puss.position.x > screen_width) {
                 Body.translate(puss,
                     Vector.sub({
                         x: (Math.random() * screen_width),
@@ -285,7 +298,19 @@ var mainInit = function () {
                 Body.resetForcesAll(puss);
                 puss.lifetime = 0;
             }
-            pussComposite.bodies[0].lifetime++;
+            puss.lifetime++;
+        }
+
+        for (var e = 0; e < particleComposite.bodies.length; e++ ){
+            var particle = particleComposite.bodies[e];
+            if (particle.position.y < 0 || particle.position.y > screen_height || particle.position.x < 0 || particle.position.x > screen_width) {
+                Body.translate(particle,
+                    Vector.sub({
+                        x: (Math.random() * screen_width),
+                        y: screen_height - 76
+                    }, particle.position));
+                Body.resetForcesAll(particle);
+            }
         }
 
 
@@ -295,29 +320,35 @@ var mainInit = function () {
 
     });
 
-    Events.on(engine, 'collisionEnd', function(event) {
+    Events.on(engine, 'collisionStart collisionEnd', function(event) {
         var pairs = event.pairs;
         for (var i = 0; i < pairs.length; i++) {
             var pair = pairs[i];
             if ( pair.bodyA.label === 'Puss' && pair.bodyB.label === 'Skin' ) {
                 if (pair.bodyA.position.y + pair.bodyA.circleRadius < pair.bodyB.position.y) {
-                    //var particles = particleComposite.bodies;
+                    var particles = particleComposite.bodies;
                     var puss = pair.bodyA;
-                    if (pair.bodyA.lifetime > 100) {
 
-                        //if (particleComposite.bodies.length < 10) {
-                        //    var randomRadius = 4 + (Math.random() * 4);
-                        //    var newBody = Bodies.circle(puss.position.x, puss.position.y, 5, particleOptions);
-                        //    newBody.label = 'Particle';
-                        //    Composite.addBody(particleComposite, newBody);
-                        //}
-                        //
-                        //for (var e = 0; e < particles.length; e++) {
-                        //    Body.translate(particles[e],
-                        //        Vector.sub(puss.position, particles[e].position));
-                        //}
-                    } else {
-                        console.log(pair.bodyA.lifetime);
+                    if (puss.lifetime > 100) {
+
+                        if (particleComposite.bodies.length < Math.round(screen_width/50)) {
+                            for (var e = 0; e < Math.round(screen_width/50); e++) {
+                                var randomRadius = 0.5 + (Math.random() * 3);
+                                var newBody = Bodies.circle((Math.random() * screen_width), screen_height - 90, randomRadius, particleOptions);
+                                newBody.label = 'Particle';
+                                Composite.addBody(particleComposite, newBody);
+                            }
+                        }
+
+                        for (var e = 0; e < particles.length; e++) {
+                            var particle = particles[e];
+                            if (particle.speed < 1) {
+                                Body.translate(particle,
+                                    Vector.sub(puss.position, particle.position));
+                                Body.resetForcesAll(particle);
+                                particle.force = { x: (Math.random()/10)-0.1, y: -0.5 };
+                            }
+                        }
                     }
 
                     Body.translate(puss,

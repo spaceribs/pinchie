@@ -58,10 +58,10 @@ window.renderpaper = {};
 
         background.fillColor = {
             gradient: {
-                stops: ['#feffff', '#a0d8ef']
+                stops: ['#EDEFFF', '#9DF']
             },
             origin: paper.view.bounds.bottomCenter,
-            destination: paper.view.bounds.center
+            destination: paper.view.bounds.topCenter
         };
 
         render.fingersLayer = new paper.Group();
@@ -75,7 +75,7 @@ window.renderpaper = {};
         render.skinLayer.closed = true;
         render.skinLayer.fillColor = {
             gradient: {
-                stops: [['#febbbb',0], ['#fe9090',0.25], ['#ff5c5c',0.5]]
+                stops: [['#fff',0], ['#fe9090',0.25], ['#ff5c5c',0.5]]
             },
             origin: paper.view.bounds.bottomCenter,
             destination: paper.view.bounds.center
@@ -83,8 +83,7 @@ window.renderpaper = {};
         render.skinLayer.smooth();
         render.skinLayer.strokeColor = "#FFF";
         render.skinLayer.strokeWidth = 5;
-
-
+        render.skinLayer.strokeJoin = 'bevel';
         render.handLayer = new paper.Group();
         render.handLayer.importJSON(hand);
         render.handLayer.children["Finger"].pivot = new paper.Point(195, 526);
@@ -206,7 +205,15 @@ window.renderpaper = {};
                     var body = bodies[render.children.length+e];
                     var center = new paper.Point(body.position.x, body.position.y);
                     var boil = new paper.Path.Circle(center, 1);
-                    boil.fillColor = "rgba(255,0,0,0.2)";
+                    boil.fillColor = {
+                        gradient: {
+                            stops: [[new paper.Color(1,0,0,0), 1], [new paper.Color(1,0,0,0.4), 0]],
+                            radial: true
+                        },
+                        origin: boil.bounds.topCenter,
+                        destination: boil.bounds.rightCenter
+                    };
+                    boil.opacity = 0;
                     render.addChild( boil );
                 }
             }
@@ -215,6 +222,7 @@ window.renderpaper = {};
                 if (bodies[i].position.x > engine.render.options.width || bodies[i].position.x < 0) {
                     render.children[i].visible = false;
                 } else {
+                    render.children[i].opacity = (bodies[i].lifetime / 100);
                     render.children[i].visible = true;
                     render.children[i].position = new paper.Point(bodies[i].position.x, bodies[i].position.y);
                     var newRadius = bodies[i].circleRadius / render.children[i].bounds.width;
@@ -239,18 +247,27 @@ window.renderpaper = {};
                     var body = bodies[render.children.length+e];
                     var center = new paper.Point(body.position.x, body.position.y);
                     var puss = new paper.Path.Circle(center, body.circleRadius+1);
-                    puss.fillColor = "#FFF";
+                    var grossGreen = 1-(Math.random()/15);
+                    var grossBlue = grossGreen - Math.random()/5;
+                    var color = new paper.Color(1,grossGreen,grossBlue);
+                    //puss.strokeColor = "#FFF";
+                    //puss.strokeWidth = 1;
+                    puss.fillColor = color;
                     render.addChild( puss );
                 }
             }
 
             for (var i = 0; i < render.children.length; i++) {
-                if (bodies[i].position.x > engine.render.options.width || bodies[i].position.x < 0) {
+                var body = bodies[i];
+                var bodyX = Math.round(body.position.x);
+                var bodyY = Math.round(body.position.y);
+                if (bodyY > engine.render.options.height || bodyX > engine.render.options.width || bodyX < 0 || bodyY < 0 || body.speed <= 0) {
                     render.children[i].visible = false;
                 } else {
                     render.children[i].visible = true;
-                    render.children[i].position = new paper.Point(bodies[i].position.x, bodies[i].position.y+5);
-                    render.children[i].radius = bodies[i].circleRadius;
+                    render.children[i].position = new paper.Point(bodyX, bodyY+5);
+                    render.children[i].opacity = bodies[i].speed;
+
                 }
             }
         }
