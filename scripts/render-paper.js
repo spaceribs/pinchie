@@ -2,10 +2,10 @@
  * See [Demo.js](https://github.com/liabru/matter-js/blob/master/demo/js/Demo.js)
  * and [DemoMobile.js](https://github.com/liabru/matter-js/blob/master/demo/js/DemoMobile.js) for usage examples.
  *
- * @class RenderPinchie
+ * @class RenderPaper
  */
 
-var RenderPinchie = {},
+var RenderPaper = {},
     Common = Matter.Common,
     Composite = Matter.Composite,
     Vector = Matter.Vector;
@@ -20,9 +20,9 @@ window.renderpaper = {};
      * @param {object} options
      * @return {render} A new renderer
      */
-    RenderPinchie.create = function(options) {
+    RenderPaper.create = function(options) {
         var defaults = {
-            controller: RenderPinchie,
+            controller: RenderPaper,
             element: null,
             canvas: null,
             paperScope: null,
@@ -58,10 +58,10 @@ window.renderpaper = {};
 
         background.fillColor = {
             gradient: {
-                stops: ['#feffff', '#a0d8ef']
+                stops: ['#EDEFFF', '#9DF']
             },
             origin: paper.view.bounds.bottomCenter,
-            destination: paper.view.bounds.center
+            destination: paper.view.bounds.topCenter
         };
 
         render.fingersLayer = new paper.Group();
@@ -75,7 +75,7 @@ window.renderpaper = {};
         render.skinLayer.closed = true;
         render.skinLayer.fillColor = {
             gradient: {
-                stops: [['#febbbb',0], ['#fe9090',0.25], ['#ff5c5c',0.5]]
+                stops: [['#fff',0], ['#fe9090',0.25], ['#ff5c5c',0.5]]
             },
             origin: paper.view.bounds.bottomCenter,
             destination: paper.view.bounds.center
@@ -83,8 +83,9 @@ window.renderpaper = {};
         render.skinLayer.smooth();
         render.skinLayer.strokeColor = "#FFF";
         render.skinLayer.strokeWidth = 5;
-
-        render.handLayer = paper.project.importJSON(hand);
+        render.skinLayer.strokeJoin = 'bevel';
+        render.handLayer = new paper.Group();
+        render.handLayer.importJSON(hand);
         render.handLayer.children["Finger"].pivot = new paper.Point(195, 526);
         render.handLayer.children["Thumb"].pivot = new paper.Point(275, 530);
         render.handLayer.children["Arm"].pivot = new paper.Point(280, 510);
@@ -108,9 +109,9 @@ window.renderpaper = {};
     /**
      * Clears the renderer. In this implementation, this is a noop.
      * @method clear
-     * @param {RenderPinchie} render
+     * @param {RenderPaper} render
      */
-    RenderPinchie.clear = function(render) {
+    RenderPaper.clear = function(render) {
     };
 
     /**
@@ -119,7 +120,7 @@ window.renderpaper = {};
      * @param {render} render
      * @param {string} background
      */
-    RenderPinchie.setBackground = function(render, background) {
+    RenderPaper.setBackground = function(render, background) {
     };
 
     /**
@@ -127,12 +128,12 @@ window.renderpaper = {};
      * @method world
      * @param {engine} engine
      */
-    RenderPinchie.world = function(engine) {
+    RenderPaper.world = function(engine) {
         //console.log(Composite.get(engine.world, 100, "composite"));
         _renderSkin(engine);
-        _renderPuss(engine);
         _renderBoils(engine);
         _renderFingers(engine);
+        _renderPuss(engine);
         paper.view.update();
     };
 
@@ -163,33 +164,6 @@ window.renderpaper = {};
                 position: thumbPoint,
                 rotation: angle + (dist.x/8)
             });
-
-//            render.set({
-//                position: {
-//                    x: mouseToFinger.pointA.x,
-//                    y: mouseToFinger.pointA.y-300
-//                }
-//            });
-
-//            if (render.children["fingerhit"]) {
-//                console.log(render.children["fingerhit"]);
-//                render.children["fingerhit"].position = new paper.Point(bodies[0].position.x, bodies[0].position.y);
-//                render.children["thumbhit"].position = new paper.Point(bodies[1].position.x, bodies[1].position.y);
-//            } else {
-//                var finger = new paper.Path.Circle(bodies[0].position, bodies[0].circleRadius);
-//                finger.fillColor = '#F00';
-//                finger.name = "fingerhit";
-//                render.addChild( finger );
-//
-//                var thumb = new paper.Path.Circle(bodies[1].position, bodies[1].circleRadius);
-//                thumb.fillColor = '#F00';
-//                thumb.name = "thumbhit";
-//                render.addChild( thumb );
-//            }
-////
-//            for (var i = 2; i < bodies.length; i++) {
-//                render.children[i].position = new paper.Point(bodies[i].position.x, bodies[i].position.y);
-//            }
         }
     };
 
@@ -227,11 +201,10 @@ window.renderpaper = {};
         if (composite) {
             var bodies = Composite.allBodies(composite);
             if (bodies.length !== render.children.length) {
-
                 for (var e = 0; e < bodies.length - render.children.length; e++) {
                     var body = bodies[render.children.length+e];
                     var center = new paper.Point(body.position.x, body.position.y);
-                    var boil = new paper.Path.Circle(center, body.circleRadius);
+                    var boil = new paper.Path.Circle(center, 1);
                     boil.fillColor = {
                         gradient: {
                             stops: [[new paper.Color(1,0,0,0), 1], [new paper.Color(1,0,0,0.4), 0]],
@@ -240,6 +213,7 @@ window.renderpaper = {};
                         origin: boil.bounds.topCenter,
                         destination: boil.bounds.rightCenter
                     };
+                    boil.opacity = 0;
                     render.addChild( boil );
                 }
             }
@@ -248,9 +222,13 @@ window.renderpaper = {};
                 if (bodies[i].position.x > engine.render.options.width || bodies[i].position.x < 0) {
                     render.children[i].visible = false;
                 } else {
+                    render.children[i].opacity = (bodies[i].lifetime / 100);
                     render.children[i].visible = true;
                     render.children[i].position = new paper.Point(bodies[i].position.x, bodies[i].position.y);
-                    render.children[i].radius = bodies[i].circleRadius;
+                    var newRadius = bodies[i].circleRadius / render.children[i].bounds.width;
+                    if (Math.round(newRadius) !== 1) {
+                        render.children[i].scale(newRadius*2);
+                    }
                 }
             }
         }
@@ -258,29 +236,38 @@ window.renderpaper = {};
 
     var _renderPuss = function(engine) {
 
-        var composite = Composite.get(engine.world, 101, "composite");
+        var composite = Composite.get(engine.world, 103, "composite");
         var render = engine.render.pussLayer;
 
         if (composite) {
             var bodies = Composite.allBodies(composite);
-            if (bodies.length !== render.children.length) {
 
+            if (bodies.length > render.children.length) {
                 for (var e = 0; e < bodies.length - render.children.length; e++) {
                     var body = bodies[render.children.length+e];
                     var center = new paper.Point(body.position.x, body.position.y);
-                    var puss = new paper.Path.Circle(center, body.circleRadius);
-                    puss.fillColor = "#FFF";
+                    var puss = new paper.Path.Circle(center, body.circleRadius+1);
+                    var grossGreen = 1-(Math.random()/15);
+                    var grossBlue = grossGreen - Math.random()/5;
+                    var color = new paper.Color(1,grossGreen,grossBlue);
+                    //puss.strokeColor = "#FFF";
+                    //puss.strokeWidth = 1;
+                    puss.fillColor = color;
                     render.addChild( puss );
                 }
             }
 
-            for (var i = 0; i < bodies.length; i++) {
-                if (bodies[i].position.x > engine.render.options.width || bodies[i].position.x < 0) {
+            for (var i = 0; i < render.children.length; i++) {
+                var body = bodies[i];
+                var bodyX = Math.round(body.position.x);
+                var bodyY = Math.round(body.position.y);
+                if (bodyY > engine.render.options.height || bodyX > engine.render.options.width || bodyX < 0 || bodyY < 0 || body.speed <= 0) {
                     render.children[i].visible = false;
                 } else {
                     render.children[i].visible = true;
-                    render.children[i].position = new paper.Point(bodies[i].position.x, bodies[i].position.y);
-                    render.children[i].radius = bodies[i].circleRadius;
+                    render.children[i].position = new paper.Point(bodyX, bodyY+5);
+                    render.children[i].opacity = bodies[i].speed;
+
                 }
             }
         }

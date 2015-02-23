@@ -45,7 +45,7 @@ var mainInit = function () {
         enableSleeping: false,
         render: {
             element: container,
-            controller: RenderPinchie,
+            controller: RenderPaper,
             options: {
                 width: screen_width,
                 height: screen_height
